@@ -218,8 +218,23 @@ export class CanvasClient {
   async listCourses(params: any = {}) {
     return this.get('/api/v1/courses', params);
   }
+  async getCourse(courseId: string, params: any = {}) {
+    return this.get<any>(`/api/v1/courses/${courseId}`, params);
+  }
+  async updateCourse(courseId: string, data: any) {
+    return this.put<any>(`/api/v1/courses/${courseId}`, data);
+  }
   async postAnnouncement(courseId: string, data: any) {
     return this.post(`/api/v1/courses/${courseId}/discussion_topics`, data);
+  }
+  async listAnnouncements(courseId: string, params: any = {}) {
+    return this.fetchAllPages<any>(`/api/v1/courses/${courseId}/discussion_topics`, { only_announcements: true, ...params });
+  }
+  async updateAnnouncement(courseId: string, announcementId: string, data: any) {
+    return this.put<any>(`/api/v1/courses/${courseId}/discussion_topics/${announcementId}`, data);
+  }
+  async getAnnouncement(courseId: string, announcementId: string) {
+    return this.get<any>(`/api/v1/courses/${courseId}/discussion_topics/${announcementId}`);
   }
 
   // --- Assignments ---
@@ -243,6 +258,26 @@ export class CanvasClient {
   }
   async createAssignmentGroup(courseId: string, data: any) {
     return this.post(`/api/v1/courses/${courseId}/assignment_groups`, data);
+  }
+
+  // --- Appointment Groups ---
+  async listAppointmentGroups(params: any = {}) {
+    return this.fetchAllPages<any>('/api/v1/appointment_groups', params);
+  }
+  async getAppointmentGroup(appointmentGroupId: string, params: any = {}) {
+    return this.get<any>(`/api/v1/appointment_groups/${appointmentGroupId}`, params);
+  }
+  async createAppointmentGroup(data: any) {
+    return this.post<any>('/api/v1/appointment_groups', data);
+  }
+  async updateAppointmentGroup(appointmentGroupId: string, data: any) {
+    return this.put<any>(`/api/v1/appointment_groups/${appointmentGroupId}`, data);
+  }
+  async deleteAppointmentGroup(appointmentGroupId: string, params: any = {}) {
+    return this.delete<any>(`/api/v1/appointment_groups/${appointmentGroupId}`, params);
+  }
+  async updateCalendarEvent(eventId: string, data: any) {
+    return this.put<any>(`/api/v1/calendar_events/${eventId}`, data);
   }
 
   // --- Modules ---

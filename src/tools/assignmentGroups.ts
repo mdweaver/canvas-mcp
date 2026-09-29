@@ -79,14 +79,45 @@ export function registerAssignmentGroupTools(server: McpServer, canvas: CanvasCl
     { idempotentHint: true },
     async ({ courseId, assignmentDates }: { courseId: string; assignmentDates: any[] }) => {
       try {
-        // Note: A specific client method for this bulk update could be added to CanvasClient
-        // For now, using the generic put method directly.
-        await canvas.put(
+        // Canvas's bulk_update endpoint expects the request body to be a raw
+        // array (not wrapped in a key), where each entry is
+        // { id, all_dates: [{ base: true, due_at?, unlock_at?, lock_at? }] }.
+        // See: PUT /api/v1/courses/:course_id/assignments/bulk_update
+        const payload = assignmentDates.map(({ assignment_id, due_at, unlock_at, lock_at }) => {
+          const dateSet: any = { base: true };
+          if (due_at !== undefined) dateSet.due_at = due_at;
+          if (unlock_at !== undefined) dateSet.unlock_at = unlock_at;
+          if (lock_at !== undefined) dateSet.lock_at = lock_at;
+          return { id: Number(assignment_id), all_dates: [dateSet] };
+        });
+        const progress = await canvas.put<any>(
           `/api/v1/courses/${courseId}/assignments/bulk_update`,
-          { assignment_dates: assignmentDates }
+          payload
         );
+        // The endpoint runs as a background job and returns a Progress object.
+        // Poll it briefly so the caller gets a real completion status instead
+        // of just "submitted".
+        let finalState: any = progress;
+        if (progress?.url) {
+          const start = Date.now();
+          const timeoutMs = 20000;
+          while (
+            finalState &&
+            !['completed', 'failed'].includes(finalState.workflow_state) &&
+            Date.now() - start < timeoutMs
+          ) {
+            await new Promise(r => setTimeout(r, 1000));
+            finalState = await canvas.get<any>(finalState.url);
+          }
+        }
+        const status = finalState?.workflow_state || 'queued';
+        const note = status === 'completed'
+          ? 'Canvas confirms the update completed.'
+          : status === 'failed'
+            ? `Canvas reported the job failed${finalState?.message ? `: ${finalState.message}` : '.'}`
+            : `Canvas is still processing (status: ${status}); re-check the assignments shortly if dates don't look updated yet.`;
         return {
-          content: [{ type: "text", text: `Bulk date update applied to ${assignmentDates.length} assignment(s) in course ${courseId}.` }]
+          content: [{ type: "text", text: `Bulk date update submitted for ${assignmentDates.length} assignment(s) in course ${courseId}. ${note}` }]
         };
       } catch (error: any) {
         if (error instanceof Error) {

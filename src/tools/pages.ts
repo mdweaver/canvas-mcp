@@ -311,23 +311,25 @@ export function registerPageTools(server: McpServer, canvas: CanvasClient) {
       title: z.string().optional().describe("The new title for the page (optional)"),
       body: z.string().optional().describe("The new HTML body for the page (optional)"),
       editingRoles: z.string().optional().describe("Comma-separated roles allowed to edit (optional)"),
+      published: z.boolean().optional().describe("Set the page's published (visible to students) state (optional)"),
       ignoreStyleguide: z.boolean().default(false).describe("Skip styleguide reference (not recommended)"),
       showStyleguidePreview: z.boolean().default(false).describe("When no body is provided, inline the full course styleguide HTML for reference (off by default to save tokens; use get-styleguide to fetch it on demand)")
     },
     { idempotentHint: true },
-    async ({ courseId, pageUrl, title, body, editingRoles, ignoreStyleguide = false, showStyleguidePreview = false }: {
+    async ({ courseId, pageUrl, title, body, editingRoles, published, ignoreStyleguide = false, showStyleguidePreview = false }: {
       courseId: string;
       pageUrl: string;
       title?: string;
       body?: string;
       editingRoles?: string;
+      published?: boolean;
       ignoreStyleguide?: boolean;
       showStyleguidePreview?: boolean;
     }) => {
       try {
         // Nothing to write: don't create/clear a page by accident. Return guidance
         // instead, and only inline the full styleguide when explicitly requested.
-        if (body === undefined && title === undefined && editingRoles === undefined) {
+        if (body === undefined && title === undefined && editingRoles === undefined && published === undefined) {
           let styleguideBlock = '';
           if (showStyleguidePreview && !ignoreStyleguide) {
             try {
@@ -360,9 +362,10 @@ export function registerPageTools(server: McpServer, canvas: CanvasClient) {
         if (title !== undefined) wiki_page.title = title;
         if (body !== undefined) wiki_page.body = body;
         if (editingRoles !== undefined) wiki_page.editing_roles = editingRoles;
-        
+        if (published !== undefined) wiki_page.published = published;
+
         const page = (await canvas.updateOrCreatePage(courseId, pageUrl, { wiki_page }) as any);
-        
+
         return {
           content: [
             {
