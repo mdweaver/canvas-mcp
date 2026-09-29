@@ -20,6 +20,7 @@
     "build": "tsc && node -e \"try{require('fs').chmodSync('dist/index.js','755')}catch(_){}\"",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
+    "prepare": "npm run build",
     "prepublishOnly": "npm run build",
     "pack-extension": "npm run build && npx @anthropic-ai/dxt pack",
     "build-extension": "npm run build && npm run pack-extension"
