@@ -1,6 +1,8 @@
 # Canvas MCP Tool Reference
 
-Full parameter reference for all **63 tools** exposed by the Canvas MCP server. For setup and usage, see the [README](../README.md).
+Full parameter reference for all **80 tools** exposed by the Canvas MCP server. For setup and usage, see the [README](../README.md).
+
+> Tools marked **(fork)** were added in this fork and are not in the upstream `r-huijts/canvas-mcp` project.
 
 ## Courses
 
@@ -15,6 +17,95 @@ Posts an announcement to a specific course.
   - `courseId`: string
   - `title`: string
   - `message`: string
+
+### list-announcements (fork)
+Lists announcements in a course, most recent first, with tags stripped and messages truncated to 300 characters.
+- Required parameters:
+  - `courseId`: string
+- Optional parameters:
+  - `includeInactive`: boolean (default: false)
+- Returns title, ID, posted date, published state, URL, and a message preview
+
+### get-announcement (fork)
+Fetches a single announcement, including its raw HTML message body.
+- Required parameters:
+  - `courseId`: string
+  - `announcementId`: string (discussion topic ID from `list-announcements`)
+- Returns title, message, posted/delayed-post/lock dates, published, locked, and pinned state
+
+### update-announcement (fork)
+Edits an existing announcement.
+- Required parameters:
+  - `courseId`: string
+  - `announcementId`: string
+- Optional parameters:
+  - `title`, `message` (HTML), `delayed_post_at` (ISO 8601), `lock_at` (ISO 8601), `published`, `locked`, `pinned`
+
+### get-syllabus (fork)
+Fetches the course's Syllabus body (the `syllabus_body` field, distinct from wiki pages).
+- Required parameters:
+  - `courseId`: string
+- Returns course ID, name, time zone, locale, and the syllabus HTML
+
+### update-syllabus (fork)
+Replaces the course's entire Syllabus body.
+- Required parameters:
+  - `courseId`: string
+  - `syllabusBody`: string (full HTML; replaces the whole field)
+- **Caution**: this overwrites the existing syllabus. Use `get-syllabus` first to keep a copy.
+
+## Appointment Groups
+
+Self-signup time slots such as office hours. Students reserve slots themselves in Canvas; these tools never book on a student's behalf.
+
+### list-appointment-groups (fork)
+Lists appointment groups the current user can reserve or manage.
+- Optional parameters:
+  - `scope`: `reservable` (default) or `manageable`
+  - `courseId`: string
+  - `includePastAppointments`: boolean (default: false)
+  - `include`: array of `appointments`, `child_events`, `participant_count`, `reserved_times`, `all_context_codes`
+- Returns ID, title, state, start/end, slot count, participant count, and context codes
+
+### get-appointment-group (fork)
+Gets one appointment group, including its time slots.
+- Required parameters:
+  - `appointmentGroupId`: string
+- Optional parameters:
+  - `include`: array of `child_events` (who signed up), `appointments` (slot IDs), `all_context_codes`
+
+### create-appointment-group (fork)
+Creates a bundle of back-to-back time slots for a course.
+- Required parameters:
+  - `courseId`: string
+  - `title`: string
+  - `startTime`: string (ISO 8601 with timezone offset, e.g. `2026-10-01T14:00:00-07:00`)
+  - `blockDurationMinutes`: number
+  - `numberOfBlocks`: number
+- Optional parameters:
+  - `breakMinutes` (gap between slots, default 0), `spotsPerBlock` (students per slot; omit for no limit), `description`, `locationName`, `sectionId`, `minAppointmentsPerParticipant`, `maxAppointmentsPerParticipant`, `participantVisibility` (`private` or `protected`), `publish` (default: false)
+- Creates a **draft** unless `publish` is true.
+
+### publish-appointment-group (fork)
+Publishes a draft so students can see it and sign up.
+- Required parameters:
+  - `appointmentGroupId`: string
+- **Caution**: publishing cannot be undone through the Canvas API.
+
+### delete-appointment-group (fork)
+Permanently deletes an appointment group and all its slots.
+- Required parameters:
+  - `appointmentGroupId`: string
+- Optional parameters:
+  - `cancelReason`: string (sent to students who had reservations)
+- **Caution**: students who signed up lose their reservations. This cannot be undone.
+
+### update-appointment-group-times (fork)
+Changes the time or location of one slot within an appointment group.
+- Required parameters:
+  - `calendarEventId`: string (the slot's ID, not the group's; get it from `get-appointment-group` with `include=['appointments']`)
+- Optional parameters (at least one required):
+  - `startAt`, `endAt` (ISO 8601 with timezone offset), `locationName`
 
 ## Students
 
@@ -53,7 +144,7 @@ Creates a new assignment in a course.
 - Required parameters:
   - `courseId`: string
 - Optional parameters:
-  - `name`, `description`, `due_at`, `points_possible`, `submission_types`, `published`, `grading_type`, `assignment_group_id`
+  - `name`, `description`, `due_at`, `unlock_at` (fork), `lock_at` (fork), `points_possible`, `submission_types`, `published`, `grading_type`, `assignment_group_id`
 
 ### update-assignment
 Updates an existing assignment.
@@ -88,6 +179,7 @@ Updates due/unlock/lock dates for multiple assignments in one call.
 - Required parameters:
   - `courseId`: string
   - `assignmentDates`: array of `{ assignment_id, due_at?, unlock_at?, lock_at? }`
+- Canvas runs this as a background job; the tool waits up to 20 seconds and reports whether it completed, failed, or is still processing. (Fixed in this fork: upstream sent a request body Canvas rejected.)
 
 ## Submissions
 
@@ -344,6 +436,7 @@ Updates (or creates) a page by URL slug.
   - `title`: string
   - `body`: string (HTML)
   - `editingRoles`: string (comma-separated roles)
+  - `published`: boolean (fork) — publish or unpublish the page
 - Returns confirmation and updated page info
 
 ### list-page-revisions

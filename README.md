@@ -6,10 +6,12 @@
 
 > Connect AI assistants to Canvas LMS — manage courses, grade submissions, edit pages, and analyze rubrics through natural conversation.
 
+> **Fork notice:** this is a fork of [r-huijts/canvas-mcp](https://github.com/r-huijts/canvas-mcp) (MIT licensed; full credit to the original author). It adds appointment-group (office hours) tools, announcement editing, syllabus read/write, unlock/lock dates on assignments, a `published` option on `update-page-content`, and a fix for `bulk-update-assignment-dates`. See [Tool Reference](#tool-reference) — new tools are marked **(fork)** in [docs/TOOLS.md](docs/TOOLS.md).
+
 ## Quick Start
 
 1. **Get a Canvas API token** — Canvas → Account → Settings → Approved Integrations → [New Access Token](https://community.canvaslms.com/t5/Student-Guide/How-do-I-manage-API-access-tokens-as-a-student/ta-p/273)
-2. **Install** via [Claude Desktop Extension](#option-1-desktop-extension-easiest) or `npx @r-huijts/canvas-mcp`
+2. **Install** by adding the server to your Claude config with `npx` (see [Claude Desktop Integration](#claude-desktop-integration))
 3. **Try a prompt** — *"List all my active Canvas courses"*
 
 ## Table of Contents
@@ -27,6 +29,7 @@
 - [Troubleshooting](#troubleshooting)
 - [Performance & Caching](#performance--caching)
 - [Development](#development)
+- [Staying in Sync with Upstream](#staying-in-sync-with-upstream)
 - [Contributing](#contributing)
 - [Security Notes](#security-notes)
 - [Related Documentation](#related-documentation)
@@ -34,26 +37,27 @@
 
 ## Features
 
-- **Courses** — list active courses, post announcements
-- **Assignments** — create, update, delete assignments and assignment groups; bulk date updates
+- **Courses** — list active courses, post/list/read/edit announcements, read and update the course syllabus
+- **Appointment groups** — create and manage office-hour sign-up slots (create, publish, list, get, delete, reschedule slots)
+- **Assignments** — create, update, delete assignments (including unlock/lock dates) and assignment groups; bulk date updates
 - **Submissions** — grade work, post feedback, download submission files
 - **Rubrics** — view rubrics, analyze statistics, attach rubrics to assignments
 - **Students** — enrollment lists with privacy-first anonymization
 - **Sections** — list sections and section-filtered submissions
 - **Modules** — full module and module-item CRUD
 - **Files** — browse the course Files section: folder trees, file lists, and per-folder contents
-- **Pages** — edit content, manage revisions, and use the styleguide system (`generate-styleguide`, `patch-page-content`)
+- **Pages** — edit content, publish/unpublish, manage revisions, and use the styleguide system (`generate-styleguide`, `patch-page-content`)
 - **Quizzes** — full quiz, question, and question-group CRUD
 - **Quiz results** — per-student answers, item analysis, report generation, and regrading
 - **ePortfolios** — list and read student ePortfolios
 - **Prompts** — `analyze-rubric-statistics` for multi-assignment rubric visualizations
 - **Performance** — ETag-based response caching to reduce API load and token use
 
-**69 tools** and **1 prompt** in total. See [docs/TOOLS.md](docs/TOOLS.md) for the full parameter reference.
+**80 tools** and **1 prompt** in total. See [docs/TOOLS.md](docs/TOOLS.md) for the full parameter reference.
 
 ## Prerequisites
 
-- Node.js v16 or higher (for npm/source installs; not required for the Desktop Extension)
+- Node.js v18 or higher (needed for the npx and source installs)
 - A Canvas API token with access to the courses you intend to manage
 - Your Canvas instance URL (e.g. `https://yourschool.instructure.com`)
 
@@ -61,35 +65,22 @@
 
 ## Installation
 
-### Option 1: Desktop Extension (Easiest)
+### Option 1: npx from GitHub (Recommended)
 
-One-click installation with Claude Desktop Extensions:
-
-1. **Download** the latest extension from [GitHub Releases](https://github.com/r-huijts/canvas-mcp/releases) (`.mcpb` or `.dxt` format, depending on the release)
-2. **Open** the file with Claude Desktop (double-click or drag-and-drop)
-3. **Click "Install"**
-4. **Configure** your Canvas API token and base URL through the Claude Desktop UI
-
-Benefits: no terminal required, secure token storage in the OS keychain, bundled dependencies, cross-platform (macOS and Windows).
-
-To build the extension yourself, see [DESKTOP_EXTENSION.md](DESKTOP_EXTENSION.md).
-
-### Option 2: NPM Package (Recommended)
+Run directly from this repository — no clone or global install needed:
 
 ```bash
-npm install -g @r-huijts/canvas-mcp
+npx -y --allow-git=all github:mdweaver/canvas-mcp
 ```
 
-Or run directly without installing:
+The first run downloads the repo and compiles it (about a minute); later runs are fast. `--allow-git=all` is required on recent npm versions, which block git-hosted packages by default. In practice you won't run this by hand — you put it in your MCP client config (see [Claude Desktop Integration](#claude-desktop-integration)).
+
+> The original project's Desktop Extension and npm package (`@r-huijts/canvas-mcp`) do **not** include this fork's additional tools.
+
+### Option 2: From Source
 
 ```bash
-npx @r-huijts/canvas-mcp
-```
-
-### Option 3: From Source
-
-```bash
-git clone https://github.com/r-huijts/canvas-mcp
+git clone https://github.com/mdweaver/canvas-mcp
 cd canvas-mcp
 npm install
 cp .env.example .env   # then edit with your credentials
@@ -139,13 +130,13 @@ Your token must belong to a user with teacher (or equivalent) access to the cour
 
 2. Add the Canvas MCP server:
 
-   **NPM package (recommended):**
+   **npx from GitHub (recommended):**
    ```json
    {
      "mcpServers": {
        "canvas": {
          "command": "npx",
-         "args": ["-y", "@r-huijts/canvas-mcp"],
+         "args": ["-y", "--allow-git=all", "github:mdweaver/canvas-mcp"],
          "env": {
            "CANVAS_API_TOKEN": "your_token_here",
            "CANVAS_BASE_URL": "https://your-canvas-instance.com"
@@ -173,7 +164,7 @@ Your token must belong to a user with teacher (or equivalent) access to the cour
 
 3. Restart Claude Desktop
 
-The `-y` flag tells npx to accept the package installation prompt automatically.
+The `-y` flag tells npx to accept the package installation prompt automatically. `--allow-git=all` permits npm to install from a GitHub repository, which recent npm versions disable by default (without it you'll see `Fetching packages of type 'git' have been disabled`). The first launch compiles the project and may take a minute, so if the server shows as failed once, restart Claude Desktop after a short wait.
 
 ## Other MCP Clients
 
@@ -184,7 +175,7 @@ Any MCP client that supports stdio transport can use the same configuration patt
   "mcpServers": {
     "canvas": {
       "command": "npx",
-      "args": ["-y", "@r-huijts/canvas-mcp"],
+      "args": ["-y", "--allow-git=all", "github:mdweaver/canvas-mcp"],
       "env": {
         "CANVAS_API_TOKEN": "your_token_here",
         "CANVAS_BASE_URL": "https://your-canvas-instance.com"
@@ -222,6 +213,18 @@ Generate a styleguide for course 12345, then patch the syllabus page to match it
 
 ```
 List all students in course 12345 with their actual names and emails
+```
+
+```
+Create 8 half-hour office-hour slots for course 12345 starting October 14 at 2pm
+```
+
+```
+Show me the current syllabus for course 12345
+```
+
+```
+Edit announcement 678 in course 12345 to fix the due date in the message
 ```
 
 ## Student Data Privacy
@@ -265,7 +268,8 @@ If you need full anonymization including staff, you can modify the logic in [`sr
 
 | Category | Count | Tools |
 |----------|-------|-------|
-| Courses | 2 | `list-courses`, `post-announcement` |
+| Courses | 7 | `list-courses`, `post-announcement`, `list-announcements`\*, `get-announcement`\*, `update-announcement`\*, `get-syllabus`\*, `update-syllabus`\* |
+| Appointment Groups | 6 | `list-appointment-groups`\*, `get-appointment-group`\*, `create-appointment-group`\*, `publish-appointment-group`\*, `delete-appointment-group`\*, `update-appointment-group-times`\* |
 | Students | 1 | `list-students` |
 | Assignments | 5 | `list-assignments`, `get-assignment`, `create-assignment`, `update-assignment`, `delete-assignment` |
 | Assignment Groups | 3 | `list-assignment-groups`, `create-assignment-group`, `bulk-update-assignment-dates` |
@@ -278,6 +282,8 @@ If you need full anonymization including staff, you can modify the logic in [`sr
 | Quizzes | 15 | `list-quizzes`, `get-quiz`, `create-quiz`, `update-quiz`, `delete-quiz`, `list-quiz-questions`, `get-quiz-question`, `create-quiz-question`, `update-quiz-question`, `delete-quiz-question`, `list-quiz-question-groups`, `get-quiz-question-group`, `create-quiz-question-group`, `update-quiz-question-group`, `delete-quiz-question-group` |
 | Quiz Results | 6 | `list-quiz-submissions`, `get-quiz-statistics`, `get-quiz-submission-answers`, `get-quiz-report`, `get-quiz-submission-events`, `update-quiz-submission-score` |
 | ePortfolios | 3 | `list-eportfolios`, `get-eportfolio`, `get-eportfolio-pages` |
+
+\* Added in this fork. Also changed in this fork: `create-assignment` / `update-assignment` accept `unlock_at` and `lock_at`, `update-page-content` accepts `published`, and `bulk-update-assignment-dates` now sends the request format Canvas expects and reports whether the background job completed.
 
 **Full parameter reference:** [docs/TOOLS.md](docs/TOOLS.md)
 
@@ -389,6 +395,20 @@ npm start        # run compiled server
 npm run dev      # run from source with tsx (hot reload)
 ```
 
+## Staying in Sync with Upstream
+
+To pull in fixes and new tools from the original project:
+
+```bash
+git remote add upstream https://github.com/r-huijts/canvas-mcp   # once
+git fetch upstream
+git merge upstream/main     # resolve any conflicts, then:
+npm run build
+git push
+```
+
+Conflicts are most likely in `src/index.ts`, `src/canvasClient.ts`, `src/tools/courses.ts`, and `docs/TOOLS.md`, where this fork adds code next to upstream's.
+
 ## Contributing
 
 1. Fork the repository
@@ -409,6 +429,11 @@ There is currently no automated test suite — manual verification via an MCP cl
 2. **Permissions**
    - Use tokens with the minimum access needed for your use case
    - Review Canvas API access logs periodically
+
+3. **Tools that change or delete data**
+   - Many tools write to Canvas, and some are hard to reverse. Notably: `delete-appointment-group` (students lose their reservations), `publish-appointment-group` (cannot be unpublished via the API), `update-syllabus` (replaces the whole syllabus), `update-announcement`, `delete-assignment`, `delete-module`, `delete-quiz`, and `bulk-update-assignment-dates`
+   - Your token acts with your Canvas permissions, so the assistant can change anything you can. Consider a token from an account limited to the courses you want edited, and ask the assistant to show you what it will change before confirming
+   - Keep a copy of important content (for example, run `get-syllabus` before `update-syllabus`)
 
 ## Related Documentation
 
