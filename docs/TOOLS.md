@@ -1,6 +1,6 @@
 # Canvas MCP Tool Reference
 
-Full parameter reference for all **80 tools** exposed by the Canvas MCP server. For setup and usage, see the [README](../README.md).
+Full parameter reference for all **89 tools** exposed by the Canvas MCP server. For setup and usage, see the [README](../README.md).
 
 > Tools marked **(fork)** were added in this fork and are not in the upstream `r-huijts/canvas-mcp` project.
 
@@ -106,6 +106,89 @@ Changes the time or location of one slot within an appointment group.
   - `calendarEventId`: string (the slot's ID, not the group's; get it from `get-appointment-group` with `include=['appointments']`)
 - Optional parameters (at least one required):
   - `startAt`, `endAt` (ISO 8601 with timezone offset), `locationName`
+
+## Groups
+
+Student groups and group sets (categories). **Privacy:** these tools never return student names or emails. Groups are reported by name and member *count* only, and there is deliberately no tool that lists group members.
+
+### list-group-categories (fork)
+Lists the group sets in a course.
+- Required parameters:
+  - `courseId`: string
+- Returns ID, name, self-signup setting, group size limit, group count, and unassigned-student count
+
+### list-groups (fork)
+Lists the groups in a course, or in one group set.
+- Required parameters:
+  - `courseId`: string
+- Optional parameters:
+  - `categoryId`: string (only groups in this group set)
+- Returns group ID, name, group set ID, member count, description, and join level
+
+### create-group-category (fork)
+Creates a group set, optionally with empty groups. Does not assign students.
+- Required parameters:
+  - `courseId`: string
+  - `name`: string
+- Optional parameters:
+  - `selfSignup`: `enabled` or `restricted`
+  - `groupLimit`: number (max students per group)
+  - `createGroupCount`: number (empty groups to create)
+
+### create-group (fork)
+Creates an empty group inside a group set.
+- Required parameters:
+  - `categoryId`: string
+  - `name`: string
+- Optional parameters:
+  - `description`: string
+  - `joinLevel`: `parent_context_auto_join`, `parent_context_request`, or `invitation_only`
+
+### add-group-member (fork)
+Adds one student to a group by user ID.
+- Required parameters:
+  - `groupId`: string
+  - `userId`: string
+- Returns membership ID, group ID, user ID, and state (no name)
+
+## Course Tabs
+
+### list-course-tabs (fork)
+Lists a course's navigation tabs.
+- Required parameters:
+  - `courseId`: string
+- Returns tab ID, label, position, hidden state, and visibility
+
+### update-course-tab (fork)
+Hides/shows or reorders a navigation tab.
+- Required parameters:
+  - `courseId`: string
+  - `tabId`: string (from `list-course-tabs`)
+- Optional parameters (at least one required):
+  - `hidden`: boolean
+  - `position`: number (1-based)
+- The Home and Settings tabs cannot be hidden or moved.
+
+## Course Copy
+
+### copy-course-content (fork)
+Copies **all** content from a source course into a destination course (assignments, pages, modules, quizzes, files, discussions, settings), optionally shifting or removing dates.
+- Required parameters:
+  - `sourceCourseId`: string
+  - `destinationCourseId`: string
+- Optional parameters:
+  - `shiftDates`: boolean (requires `oldStartDate` and `newStartDate`)
+  - `oldStartDate`, `newStartDate`, `oldEndDate`, `newEndDate`: string (`YYYY-MM-DD`)
+  - `removeDates`: boolean (cannot be combined with `shiftDates`)
+- Canvas runs the copy as a background job; the tool waits up to 20 seconds and reports the state.
+- **Caution**: content is added to the destination and nothing is removed, so copying into a non-empty course can create duplicates. Copying only selected content types is not supported yet.
+
+### get-content-migration (fork)
+Checks the status of a course copy.
+- Required parameters:
+  - `courseId`: string (the destination course)
+  - `migrationId`: string (returned by `copy-course-content`)
+- Returns the state (`running`, `completed`, `failed`) and any issue count/URL
 
 ## Students
 

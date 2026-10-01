@@ -6,7 +6,7 @@
 
 > Connect AI assistants to Canvas LMS — manage courses, grade submissions, edit pages, and analyze rubrics through natural conversation.
 
-> **Fork notice:** this is a fork of [r-huijts/canvas-mcp](https://github.com/r-huijts/canvas-mcp) (MIT licensed; full credit to the original author). It adds appointment-group (office hours) tools, announcement editing, syllabus read/write, unlock/lock dates on assignments, a `published` option on `update-page-content`, and a fix for `bulk-update-assignment-dates`. See [Tool Reference](#tool-reference) — new tools are marked **(fork)** in [docs/TOOLS.md](docs/TOOLS.md).
+> **Fork notice:** this is a fork of [r-huijts/canvas-mcp](https://github.com/r-huijts/canvas-mcp) (MIT licensed; full credit to the original author). It adds appointment-group (office hours) tools, announcement editing, syllabus read/write, student groups, course navigation tab control, course content copying, unlock/lock dates on assignments, a `published` option on `update-page-content`, and a fix for `bulk-update-assignment-dates`. See [Tool Reference](#tool-reference) — new tools are marked **(fork)** in [docs/TOOLS.md](docs/TOOLS.md).
 
 ## Quick Start
 
@@ -39,6 +39,9 @@
 
 - **Courses** — list active courses, post/list/read/edit announcements, read and update the course syllabus
 - **Appointment groups** — create and manage office-hour sign-up slots (create, publish, list, get, delete, reschedule slots)
+- **Groups** — list group sets and groups, create them, and add a student to a group (privacy-first: returns member counts, never names)
+- **Course tabs** — list, hide/show, and reorder course navigation items
+- **Course copy** — copy all content from one course into another, with optional date shifting
 - **Assignments** — create, update, delete assignments (including unlock/lock dates) and assignment groups; bulk date updates
 - **Submissions** — grade work, post feedback, download submission files
 - **Rubrics** — view rubrics, analyze statistics, attach rubrics to assignments
@@ -53,7 +56,7 @@
 - **Prompts** — `analyze-rubric-statistics` for multi-assignment rubric visualizations
 - **Performance** — ETag-based response caching to reduce API load and token use
 
-**80 tools** and **1 prompt** in total. See [docs/TOOLS.md](docs/TOOLS.md) for the full parameter reference.
+**89 tools** and **1 prompt** in total. See [docs/TOOLS.md](docs/TOOLS.md) for the full parameter reference.
 
 ## Prerequisites
 
@@ -270,6 +273,9 @@ If you need full anonymization including staff, you can modify the logic in [`sr
 |----------|-------|-------|
 | Courses | 7 | `list-courses`, `post-announcement`, `list-announcements`\*, `get-announcement`\*, `update-announcement`\*, `get-syllabus`\*, `update-syllabus`\* |
 | Appointment Groups | 6 | `list-appointment-groups`\*, `get-appointment-group`\*, `create-appointment-group`\*, `publish-appointment-group`\*, `delete-appointment-group`\*, `update-appointment-group-times`\* |
+| Groups | 5 | `list-group-categories`\*, `list-groups`\*, `create-group-category`\*, `create-group`\*, `add-group-member`\* |
+| Course Tabs | 2 | `list-course-tabs`\*, `update-course-tab`\* |
+| Course Copy | 2 | `copy-course-content`\*, `get-content-migration`\* |
 | Students | 1 | `list-students` |
 | Assignments | 5 | `list-assignments`, `get-assignment`, `create-assignment`, `update-assignment`, `delete-assignment` |
 | Assignment Groups | 3 | `list-assignment-groups`, `create-assignment-group`, `bulk-update-assignment-dates` |
@@ -431,7 +437,7 @@ There is currently no automated test suite — manual verification via an MCP cl
    - Review Canvas API access logs periodically
 
 3. **Tools that change or delete data**
-   - Many tools write to Canvas, and some are hard to reverse. Notably: `delete-appointment-group` (students lose their reservations), `publish-appointment-group` (cannot be unpublished via the API), `update-syllabus` (replaces the whole syllabus), `update-announcement`, `delete-assignment`, `delete-module`, `delete-quiz`, and `bulk-update-assignment-dates`
+   - Many tools write to Canvas, and some are hard to reverse. `copy-course-content` adds content to the destination course without removing anything, so copying into a course that already has content can create duplicates. Notably: `delete-appointment-group` (students lose their reservations), `publish-appointment-group` (cannot be unpublished via the API), `update-syllabus` (replaces the whole syllabus), `update-announcement`, `delete-assignment`, `delete-module`, `delete-quiz`, and `bulk-update-assignment-dates`
    - Your token acts with your Canvas permissions, so the assistant can change anything you can. Consider a token from an account limited to the courses you want edited, and ask the assistant to show you what it will change before confirming
    - Keep a copy of important content (for example, run `get-syllabus` before `update-syllabus`)
 

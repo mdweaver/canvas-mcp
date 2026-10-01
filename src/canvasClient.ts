@@ -280,6 +280,42 @@ export class CanvasClient {
     return this.put<any>(`/api/v1/calendar_events/${eventId}`, data);
   }
 
+  // --- Groups ---
+  async listCourseGroups(courseId: string, params: any = {}) {
+    return this.fetchAllPages<any>(`/api/v1/courses/${courseId}/groups`, params);
+  }
+  async listGroupCategories(courseId: string, params: any = {}) {
+    return this.fetchAllPages<any>(`/api/v1/courses/${courseId}/group_categories`, params);
+  }
+  async listCategoryGroups(categoryId: string, params: any = {}) {
+    return this.fetchAllPages<any>(`/api/v1/group_categories/${categoryId}/groups`, params);
+  }
+  async createGroupCategory(courseId: string, data: any) {
+    return this.post<any>(`/api/v1/courses/${courseId}/group_categories`, data);
+  }
+  async createGroup(categoryId: string, data: any) {
+    return this.post<any>(`/api/v1/group_categories/${categoryId}/groups`, data);
+  }
+  async addGroupMember(groupId: string, data: any) {
+    return this.post<any>(`/api/v1/groups/${groupId}/memberships`, data);
+  }
+
+  // --- Course tabs ---
+  async listCourseTabs(courseId: string, params: any = {}) {
+    return this.get<any[]>(`/api/v1/courses/${courseId}/tabs`, params);
+  }
+  async updateCourseTab(courseId: string, tabId: string, data: any) {
+    return this.put<any>(`/api/v1/courses/${courseId}/tabs/${tabId}`, data);
+  }
+
+  // --- Content migrations ---
+  async createContentMigration(courseId: string, data: any) {
+    return this.post<any>(`/api/v1/courses/${courseId}/content_migrations`, data);
+  }
+  async getContentMigration(courseId: string, migrationId: string) {
+    return this.get<any>(`/api/v1/courses/${courseId}/content_migrations/${migrationId}`);
+  }
+
   // --- Modules ---
   async listModules(courseId: string, params: any = {}) {
     return this.get(`/api/v1/courses/${courseId}/modules`, { per_page: 100, ...params });
