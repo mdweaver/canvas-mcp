@@ -299,6 +299,15 @@ export class CanvasClient {
   async addGroupMember(groupId: string, data: any) {
     return this.post<any>(`/api/v1/groups/${groupId}/memberships`, data);
   }
+  async getGroup(groupId: string) {
+    return this.get<any>(`/api/v1/groups/${groupId}`);
+  }
+  async postGroupAnnouncement(groupId: string, data: any) {
+    return this.post<any>(`/api/v1/groups/${groupId}/discussion_topics`, data);
+  }
+  async listGroupAnnouncements(groupId: string, params: any = {}) {
+    return this.fetchAllPages<any>(`/api/v1/groups/${groupId}/discussion_topics`, { only_announcements: true, ...params });
+  }
 
   // --- Course tabs ---
   async listCourseTabs(courseId: string, params: any = {}) {

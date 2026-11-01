@@ -1,6 +1,6 @@
 # Canvas MCP Tool Reference
 
-Full parameter reference for all **89 tools** exposed by the Canvas MCP server. For setup and usage, see the [README](../README.md).
+Full parameter reference for all **92 tools** exposed by the Canvas MCP server. For setup and usage, see the [README](../README.md).
 
 > Tools marked **(fork)** were added in this fork and are not in the upstream `r-huijts/canvas-mcp` project.
 
@@ -150,6 +150,32 @@ Adds one student to a group by user ID.
   - `groupId`: string
   - `userId`: string
 - Returns membership ID, group ID, user ID, and state (no name)
+
+### post-group-announcement (fork)
+Posts an announcement to one student group. Only members of that group can see it (it appears in the group Announcements area).
+- Required parameters:
+  - `groupId`: string (from `list-groups`)
+  - `title`: string
+  - `message`: string (plain text is converted to paragraphs; HTML is sent as-is)
+- Optional parameters:
+  - `published`: boolean (false asks Canvas for an unpublished draft; Canvas may ignore this for announcements, so do not rely on it to hide a message from students)
+- Returns group ID, announcement (discussion topic) ID, title, and published state; no member names
+- **Caution**: posts to the group members immediately.
+
+### post-group-announcements (fork)
+Posts a different announcement to each of several groups in one call. **Dry run by default.**
+- Required parameters:
+  - `announcements`: array of 1 to 60 objects `{ groupId, title, message }`, one per group
+- Optional parameters:
+  - `dryRun`: boolean (default: **true**). When true it lists the groups and titles it would post to and posts nothing; set false to post for real
+- Groups with no members are skipped, duplicate `groupId` values are rejected, and a failure in one group does not stop the others
+- Returns one line per group with the group name and member count only
+
+### list-group-announcements (fork)
+Lists the announcements in one group, most recent first, with tags stripped and messages truncated to 300 characters.
+- Required parameters:
+  - `groupId`: string
+- Returns announcement ID, title, posted date, published state, and a message preview; no author names
 
 ## Course Tabs
 
